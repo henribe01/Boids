@@ -14,13 +14,14 @@ class Boid:
         self.separation_weight = 1
 
 
-    def update_plot(self, ax: plt.Axes) -> plt.Artist:
+    def update_plot(self, ax: plt.Axes, c="b") -> plt.Artist:
         """
         Updates the position of the boid's plot and returns the artist object.
         """
         orientation = np.arctan2(self.vel[1], self.vel[0])
         self.artist, = ax.plot(self.pos[0], self.pos[1], markersize=3, marker=(3, 0, np.degrees(orientation) - 90), linestyle="", color="black")
         return self.artist
+
 
     def update(self, neighborhood: list, max_speed: float = 1, max_force: float = 0.1) -> None:
         """
@@ -54,47 +55,45 @@ class Boid:
         elif self.pos[1] > height:
             self.pos[1] = 0
 
-    def get_neighborhood(self, boids: list, radius: float) -> list:
+    def get_neighborhood(self, boids: list, radius: float) -> dict:
         """
-        Returns a list of boids within the given radius of this boid
+        Returns a dictionary of boids within a certain radius of the current boid and their distances.
         """
         # TODO: Add angle to the condition
-        neighborhood = []
-        for boid in boids:
-            if boid is self:
-                continue
-            if np.linalg.norm(boid.pos - self.pos) < radius:
-                neighborhood.append(boid)
+        neighborhood = dict()
+        pos_array = np.array([boid.pos for boid in boids])
+        dist = np.linalg.norm(pos_array - self.pos, axis=1)
+        neighborhood = {d: b for d, b in zip(dist, boids) if d < radius and d != 0}
         return neighborhood
+
     
-    def align(self, neighborhood: list) -> np.ndarray:
+    def align(self, neighborhood: dict) -> np.ndarray:
         """
         Returns the alignment vector of the boid based on the velocities of its neighbors.
         """
         if len(neighborhood) == 0:
             return np.zeros(2)
-        avg_vel = np.mean([boid.vel for boid in neighborhood], axis=0)
+        avg_vel = np.mean([boid.vel for boid in neighborhood.values()], axis=0)
         return avg_vel - self.vel
 
-    def cohesion(self, neighborhood: list) -> np.ndarray:
+    def cohesion(self, neighborhood: dict) -> np.ndarray:
         """
         Returns the cohesion vector of the boid based on the positions of its neighbors.
         """
         if len(neighborhood) == 0:
             return np.zeros(2)
-        avg_pos = np.mean([boid.pos for boid in neighborhood], axis=0)
+        avg_pos = np.mean([boid.pos for boid in neighborhood.values()], axis=0)
         return avg_pos - self.pos
     
-    def separation(self, neighborhood: list) -> np.ndarray:
+    def separation(self, neighborhood: dict) -> np.ndarray:
         """
         Returns the separation vector of the boid based on the positions of its neighbors.
         """
         if len(neighborhood) == 0:
             return np.zeros(2)
-        separation = np.zeros(2)
-        for boid in neighborhood:
-            diff = boid.pos - self.pos
-            separation -= diff / np.linalg.norm(diff)**2
+        pos_diff = np.array([boid.pos - self.pos for boid in neighborhood.values()])
+        dist_squared = np.array([dist**2 for dist in neighborhood.keys()])
+        separation = -np.sum(pos_diff / dist_squared[:, None], axis=0)
         return separation
     
     def boundary(self) -> np.ndarray:

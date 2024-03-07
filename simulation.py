@@ -1,4 +1,4 @@
-from boids import Boid
+from boids import *
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
@@ -24,7 +24,7 @@ class Flock:
         self.fig, self.ax = plt.subplots()
         self.ax.set_xlim(0, width)
         self.ax.set_ylim(0, height)
-        self.ani = FuncAnimation(self.fig, self.update, blit=True, interval=1000/60, cache_frame_data=False)
+        self.ani = FuncAnimation(self.fig, self.update, blit=True, interval=1000/30, cache_frame_data=False)
 
     def show(self) -> None:
         plt.show()
