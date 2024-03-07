@@ -19,7 +19,7 @@ class Boid:
         Updates the position of the boid's plot and returns the artist object.
         """
         orientation = np.arctan2(self.vel[1], self.vel[0])
-        self.artist, = ax.plot(self.pos[0], self.pos[1], markersize=3, marker=(3, 0, np.degrees(orientation) - 90), linestyle="", color="black")
+        self.artist, = ax.plot(self.pos[0], self.pos[1], markersize=3, marker=(3, 0, np.degrees(orientation) - 90), linestyle="", color=c)
         return self.artist
 
 
@@ -112,3 +112,56 @@ class Boid:
             bound_vel[1] = -bound_force
 
         return bound_vel
+
+class Predator(Boid):
+    def __init__(self, pos: np.ndarray, vel: np.ndarray, WIDTH: int, HEIGHT: int):
+        super().__init__(pos, vel, WIDTH, HEIGHT)
+    
+    def update(self, neighborhood: list, max_speed: float = 1, max_force: float = 0.1) -> None:
+        """
+        Updates the position and velocity of the predator based on its current acceleration.
+        """
+        seek = self.seek(neighborhood) # Seek the closest boid
+        wander = self.wander() # Wander around if no boids are nearby
+        bound = self.boundary()
+
+        if np.linalg.norm(seek) != 0:
+            wander_weight = 0
+        else:
+            wander_weight = 1
+
+        # Update the velocity
+        acc = seek + wander * wander_weight + bound
+        if np.linalg.norm(acc) > max_force:
+            acc = max_force * acc / np.linalg.norm(acc)
+        self.vel += acc
+        if np.linalg.norm(self.vel) > max_speed:
+            self.vel = max_speed * self.vel / np.linalg.norm(self.vel)
+        self.pos += self.vel
+
+    def seek(self, neighborhood: dict) -> np.ndarray:
+        """
+        Returns the vector pointing towards the closest boid.
+        """
+        if len(neighborhood) == 0:
+            return np.zeros(2)
+        closest_boid = None
+        closest_dist = np.inf
+        for dist, boid in neighborhood.items():
+            if dist < closest_dist and not isinstance(boid, Predator):
+                closest_dist = dist
+                closest_boid = boid
+        return closest_boid.pos - self.pos
+    
+    def wander(self) -> np.ndarray:
+        """
+        Returns a vector pointing in a random direction.	
+        """
+        wander_force = 0.1
+        return wander_force * np.random.uniform(-1, 1, 2)
+        	
+    
+    def update_plot(self, ax: plt.Axes, c="b") -> plt.Artist:
+        orientation = np.arctan2(self.vel[1], self.vel[0])
+        self.artist, = ax.plot(self.pos[0], self.pos[1], markersize=3, marker=(3, 0, np.degrees(orientation) - 90), linestyle="", color='red')
+        return self.artist

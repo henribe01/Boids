@@ -18,6 +18,9 @@ class Flock:
             b = Boid(pos, vel, width, height)
             self.boids.append(b)
 
+        pred = Predator(np.random.rand(2) * [width, height], np.random.uniform(-1, 1, 2), width, height)
+        self.boids.append(pred)
+
         self.radius = radius
 
         # Create the plot
