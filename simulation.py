@@ -24,8 +24,8 @@ class Flock:
         self.fig, self.ax = plt.subplots()
         self.ax.set_xlim(0, width)
         self.ax.set_ylim(0, height)
-        self.artists = [b.plot(self.ax) for b in self.boids]
         self.ani = FuncAnimation(self.fig, self.update, blit=True, interval=1000/60, cache_frame_data=False)
+
     def show(self) -> None:
         plt.show()
 
@@ -34,7 +34,7 @@ class Flock:
         for boid in self.boids:
             neighborhood = boid.get_neighborhood(self.boids, self.radius)
             boid.update(neighborhood)
-            artist = boid.update_plot()
+            artist = boid.update_plot(self.ax)
             updated_artists.append(artist)
         return updated_artists
 

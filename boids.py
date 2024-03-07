@@ -13,19 +13,13 @@ class Boid:
         self.alignment_weight = 1
         self.separation_weight = 1
 
-    def plot(self, ax: plt.Axes) -> plt.Artist:
-        """
-        Plots the boid as an triangle pointing in the direction of the velocity on the given axis.
-        """
-        # TODO: For now, I just plot the position of the boid as a point. Replace this with a triangle.
-        self.artist, = ax.plot(self.pos[0], self.pos[1], 'ro', markersize=3)
 
-    def update_plot(self) -> plt.Artist:
+    def update_plot(self, ax: plt.Axes) -> plt.Artist:
         """
         Updates the position of the boid's plot and returns the artist object.
         """
-        assert self.artist is not None, "plot() must be called before update_plot()"
-        self.artist.set_data(self.pos[0], self.pos[1])
+        orientation = np.arctan2(self.vel[1], self.vel[0])
+        self.artist, = ax.plot(self.pos[0], self.pos[1], markersize=3, marker=(3, 0, np.degrees(orientation) - 90), linestyle="", color="black")
         return self.artist
 
     def update(self, neighborhood: list, max_speed: float = 1, max_force: float = 0.1) -> None:
