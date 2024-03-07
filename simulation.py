@@ -25,8 +25,7 @@ class Flock:
         self.ax.set_xlim(0, width)
         self.ax.set_ylim(0, height)
         self.artists = [b.plot(self.ax) for b in self.boids]
-        self.ani = FuncAnimation(self.fig, self.update, blit=True, interval=1000/60, save_count=50)
-
+        self.ani = FuncAnimation(self.fig, self.update, blit=True, interval=1000/60, cache_frame_data=False)
     def show(self) -> None:
         plt.show()
 

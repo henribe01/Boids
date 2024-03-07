@@ -28,30 +28,23 @@ class Boid:
         self.artist.set_data(self.pos[0], self.pos[1])
         return self.artist
 
-    def update(self, neighborhood: list, max_speed: float = 4, max_force: float = 1) -> None:
+    def update(self, neighborhood: list, max_speed: float = 1, max_force: float = 0.1) -> None:
         """
         Updates the position and velocity of the boid based on its current acceleration.
         """
-        self.check_bounds(self.WIDTH, self.HEIGHT)
-
         alignment = self.align(neighborhood)
-        if np.linalg.norm(alignment) > max_force:
-            alignment = max_force * alignment / np.linalg.norm(alignment)
-        
         cohesion = self.cohesion(neighborhood)
-        if np.linalg.norm(cohesion) > max_force:
-            cohesion = max_force * cohesion / np.linalg.norm(cohesion)
-
         separation = self.separation(neighborhood)
-        if np.linalg.norm(separation) > max_force:
-            separation = max_force * separation / np.linalg.norm(separation)
+        bound = self.boundary()
 
         # Update the velocity
-        acc = alignment * self.alignment_weight + cohesion * self.cohesion_weight + separation * self.separation_weight
+        acc = alignment * self.alignment_weight + cohesion * self.cohesion_weight + separation * self.separation_weight + bound
+        if np.linalg.norm(acc) > max_force:
+            acc = max_force * acc / np.linalg.norm(acc)
         self.vel += acc
         if np.linalg.norm(self.vel) > max_speed:
             self.vel = max_speed * self.vel / np.linalg.norm(self.vel)
-        self.pos += self.vel
+        self.pos += self.vel   
 
 
     def check_bounds(self, width: int, height: int) -> None:
@@ -74,16 +67,9 @@ class Boid:
         # TODO: Add angle to the condition
         neighborhood = []
         for boid in boids:
-            width_vec = [self.WIDTH, 0]
-            height_vec = [0, self.HEIGHT]
-            distances = [
-                np.linalg.norm(boid.pos - self.pos),
-                np.linalg.norm(boid.pos - (self.pos + width_vec)),
-                np.linalg.norm(boid.pos - (self.pos + height_vec)),
-                np.linalg.norm(boid.pos - (self.pos - width_vec)),
-                np.linalg.norm(boid.pos - (self.pos - height_vec))
-            ]
-            if min(distances) < radius and boid != self:
+            if boid is self:
+                continue
+            if np.linalg.norm(boid.pos - self.pos) < radius:
                 neighborhood.append(boid)
         return neighborhood
     
@@ -103,8 +89,7 @@ class Boid:
         if len(neighborhood) == 0:
             return np.zeros(2)
         avg_pos = np.mean([boid.pos for boid in neighborhood], axis=0)
-        #TODO: Set magnitude to max_speed
-        return avg_pos - self.pos - self.vel
+        return avg_pos - self.pos
     
     def separation(self, neighborhood: list) -> np.ndarray:
         """
@@ -114,6 +99,23 @@ class Boid:
             return np.zeros(2)
         separation = np.zeros(2)
         for boid in neighborhood:
-            diff = self.pos - boid.pos
-            separation += diff / np.linalg.norm(diff)*
-        return separation / len(neighborhood) - self.vel
+            diff = boid.pos - self.pos
+            separation -= diff / np.linalg.norm(diff)**2
+        return separation
+    
+    def boundary(self) -> np.ndarray:
+        """
+        Returns a vector pointing away from the nearest boundary.
+        """
+        bound_force = 1
+        bound_vel = np.zeros(2)
+        if self.pos[0] < 10:
+            bound_vel[0] = bound_force
+        elif self.pos[0] > self.WIDTH - 10:
+            bound_vel[0] = -bound_force
+        if self.pos[1] < 10:
+            bound_vel[1] = bound_force
+        elif self.pos[1] > self.HEIGHT - 10:
+            bound_vel[1] = -bound_force
+
+        return bound_vel
