@@ -2,10 +2,11 @@ from boids import *
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
+from matplotlib.widgets import Slider, Button
 
 WIDTH = 50
 HEIGHT = 50
-NUM_BOIDS = 20
+NUM_BOIDS = 50
 
 
 class Flock:
@@ -27,7 +28,36 @@ class Flock:
         self.fig, self.ax = plt.subplots()
         self.ax.set_xlim(0, width)
         self.ax.set_ylim(0, height)
+        self.ax.set_aspect("equal")
         self.ani = FuncAnimation(self.fig, self.update, blit=True, interval=1000/30, cache_frame_data=False)
+
+        # Create sliders
+        self.fig.subplots_adjust(bottom=0.3)
+        axcolor = 'lightgoldenrodyellow'
+        sliders = {"Alignment": None,
+                     "Cohesion": None,
+                     "Separation": None,
+                     "Flee": None,
+                     "Boundary": None}
+        for name in sliders:
+            ax = self.fig.add_axes([0.25, 0.02 + 0.05 * list(sliders.keys()).index(name), 0.65, 0.03], facecolor=axcolor)
+            sliders[name] = Slider(ax=ax,
+                                      label=name,
+                                      valmin=0,
+                                      valmax=2,
+                                      valinit=1,
+                                        orientation="horizontal")
+            sliders[name].on_changed(self.update_weights)
+        self.sliders = sliders
+
+    def update_weights(self, val) -> None:
+        for boid in self.boids:
+            boid.alignment_weight = self.sliders["Alignment"].val
+            boid.cohesion_weight = self.sliders["Cohesion"].val
+            boid.separation_weight = self.sliders["Separation"].val
+            boid.flee_weight = self.sliders["Flee"].val
+            boid.boundary_weight = self.sliders["Boundary"].val
+
 
     def show(self) -> None:
         plt.show()
@@ -35,7 +65,10 @@ class Flock:
     def update(self, frame: int) -> list:
         updated_artists = []
         for boid in self.boids:
-            neighborhood = boid.get_neighborhood(self.boids, self.radius)
+            if isinstance(boid, Predator):
+                neighborhood = boid.get_neighborhood(self.boids, 2 * self.radius)
+            else:
+                neighborhood = boid.get_neighborhood(self.boids, self.radius)
             boid.update(neighborhood)
             artist = boid.update_plot(self.ax)
             updated_artists.append(artist)

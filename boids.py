@@ -12,10 +12,11 @@ class Boid:
 
         self.bound_force = 1
 
-        self.cohesion_weight = 1
-        self.alignment_weight = 1
-        self.separation_weight = 1
-        self.flee_weight = 10
+        self.cohesion_weight = 8
+        self.alignment_weight = 4 
+        self.separation_weight = 10
+        self.boundary_weight = 2
+        self.flee_weight = 20
 
     def update_plot(self, ax: plt.Axes, c="b") -> plt.Artist:
         """
@@ -38,7 +39,7 @@ class Boid:
 
         # Update the velocity
         acc = alignment * self.alignment_weight + cohesion * self.cohesion_weight + \
-            separation * self.separation_weight + flee * self.flee_weight + bound
+            separation * self.separation_weight + flee * self.flee_weight + bound * self.boundary_weight
         if np.linalg.norm(acc) > max_force:
             acc = max_force * acc / np.linalg.norm(acc)
         self.vel += acc
@@ -136,24 +137,26 @@ class Predator(Boid):
         self.wander_angle = 0
         self.angle_change = 0.1
 
-    def update(self, neighborhood: list, max_speed: float = 1.5, max_force: float = 0.1) -> None:
+    def update(self, neighborhood: list, max_speed: float = 1.5, max_force: float = 0.3) -> None:
         """
         Updates the position and velocity of the predator based on its current acceleration.
         """
         seek = self.seek(neighborhood)  # Seek the closest boid
         wander = self.wander()  # Wander around if no boids are nearby
         bound = self.boundary()
+        seek_weight = 1
 
         # Change weights depending on situation
         if np.linalg.norm(seek) != 0:  # If there are boids nearby, don't wander
             wander_weight = 0
+            seek_weight = 10
         else:
             wander_weight = 1
         if self.pos[0] < 10 or self.pos[0] > self.WIDTH - 10 or self.pos[1] < 10 or self.pos[1] > self.HEIGHT - 10:
             wander_weight = 0  # Don't wander if near the boundary
 
         # Update the velocity
-        acc = seek + wander * wander_weight + bound
+        acc = seek * seek_weight + wander * wander_weight + bound
         if np.linalg.norm(acc) > max_force:
             acc = max_force * acc / np.linalg.norm(acc)
         self.vel += acc
